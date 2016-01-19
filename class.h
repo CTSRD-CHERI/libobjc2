@@ -1,6 +1,7 @@
 #ifndef __OBJC_CLASS_H_INCLUDED
 #define __OBJC_CLASS_H_INCLUDED
 #include "visibility.h"
+#include <stdio.h>
 
 /**
  * Overflow bitfield.  Used for bitfields that are more than 63 bits.
@@ -20,11 +21,24 @@ struct objc_bitfield
 
 static inline BOOL objc_bitfield_test(uintptr_t bitfield, uint64_t field)
 {
-	if (bitfield & 1)
+#ifdef __CHERI_PURE_CAPABILITY__
+	if (!__builtin_memcap_tag_get((void*)bitfield))
+	{
+		int64_t values = __builtin_memcap_offset_get((void*)bitfield) >> 1;
+		if (field >= 63)
+		{
+			return NO;
+		}
+		uint64_t bit = 1<<field;
+		return (values & bit) == bit;
+	}
+#else
+	if ((size_t)bitfield & 1)
 	{
 		uint64_t bit = 1<<(field+1);
-		return (bitfield & bit) == bit;
+		return ((size_t)bitfield & bit) == bit;
 	}
+#endif
 	struct objc_bitfield *bf = (struct objc_bitfield*)bitfield;
 	uint64_t byte = field / 32;
 	if (byte >= bf->length)
@@ -282,7 +296,7 @@ extern Class SmallObjectClasses[7];
 static BOOL isSmallObject(id obj)
 {
 	uintptr_t addr = ((uintptr_t)obj);
-	return (addr & OBJC_SMALL_OBJECT_MASK) != 0;
+	return ((size_t)addr & OBJC_SMALL_OBJECT_MASK) != 0;
 }
 
 __attribute__((always_inline))
@@ -297,7 +311,7 @@ static inline Class classForObject(id obj)
 		else
 		{
 			uintptr_t addr = ((uintptr_t)obj);
-			return SmallObjectClasses[(addr & OBJC_SMALL_OBJECT_MASK)];
+			return SmallObjectClasses[((size_t)addr & OBJC_SMALL_OBJECT_MASK)];
 		}
 	}
 	return obj->isa;

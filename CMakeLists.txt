@@ -10,7 +10,7 @@ set(CMAKE_C_FLAGS "-std=gnu99 ${CMAKE_C_FLAGS}")
 
 set(libobjc_VERSION 4.6)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fexceptions")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-exceptions -fno-objc-exceptions")
 # Build configuration
 add_definitions( -DGNUSTEP -D__OBJC_RUNTIME_INTERNAL__=1)
 # Probably not needed anymore?
@@ -69,7 +69,7 @@ set(libobjc_HDRS
 	objc/slot.h
 )
 
-set(libobjcxx_CXX_SRCS objcxx_eh.cc)
+#set(libobjcxx_CXX_SRCS objcxx_eh.cc)
 
 # For release builds, we disable spamming the terminal with warnings about
 # selector type mismatches
@@ -146,7 +146,7 @@ if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "i686")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=i586")
 endif ()
 
-set(INSTALL_TARGETS objc)
+#set(INSTALL_TARGETS objc)
 
 set_source_files_properties(
 	${libobjc_OBJC_SRCS}
@@ -221,14 +221,14 @@ set(objc_LINK_FLAGS "${objc_LINK_FLAGS} ${CMAKE_THREAD_LIBS_INIT}")
 
 
 
-add_library(objc SHARED ${libobjc_C_SRCS} ${libobjc_ASM_SRCS} ${libobjc_OBJC_SRCS} ${libobjc_CXX_SRCS})
+#add_library(objc SHARED ${libobjc_C_SRCS} ${libobjc_ASM_SRCS} ${libobjc_OBJC_SRCS} ${libobjc_CXX_SRCS})
 
-set_target_properties(objc PROPERTIES
-	LINKER_LANGUAGE C
-	SOVERSION ${libobjc_VERSION}
-	OUTPUT_NAME ${LIBOBJC_NAME}
-	LINK_FLAGS "${objc_LINK_FLAGS}"
-	)
+#set_target_properties(objc PROPERTIES
+#LINKER_LANGUAGE C
+#SOVERSION ${libobjc_VERSION}
+#OUTPUT_NAME ${LIBOBJC_NAME}
+#	LINK_FLAGS "${objc_LINK_FLAGS}"
+#	)
 
 set_property(TARGET PROPERTY NO_SONAME true)
 
@@ -245,16 +245,16 @@ endif ()
 
 
 # Explicitly link the C++ runtime and libgc if we are compiling with gc support.
-target_link_libraries(objc ${CXX_RUNTIME})
-if (LIBGC)
-	target_link_libraries(objc ${LIBGC})
-endif ()
+#target_link_libraries(objc ${CXX_RUNTIME})
+#if (LIBGC)
+#target_link_libraries(objc ${LIBGC})
+#endif ()
 
 # Link libdispatch if available (we'll miss symbols for toydispatch otherwise)
-find_library(LIBDISPATCH dispatch)
-if (LIBDISPATCH)
-	target_link_libraries(objc ${LIBDISPATCH})
-endif ()
+#find_library(LIBDISPATCH dispatch)
+#if (LIBDISPATCH)
+#target_link_libraries(objc ${LIBDISPATCH})
+#endif ()
 
 # Make weak symbols work on OS X
 if (APPLE)

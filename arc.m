@@ -174,7 +174,7 @@ static inline id retain(id obj)
 	}
 	if (objc_test_class_flag(cls, objc_class_flag_fast_arc))
 	{
-		intptr_t *refCount = ((intptr_t*)obj) - 1;
+		ptrdiff_t *refCount = ((ptrdiff_t*)obj) - 1;
 		// Note: this should be an atomic read, so that a sufficiently clever
 		// compiler doesn't notice that there's no happens-before relationship
 		// here.
@@ -203,7 +203,7 @@ static inline void release(id obj)
 	}
 	if (objc_test_class_flag(cls, objc_class_flag_fast_arc))
 	{
-		intptr_t *refCount = ((intptr_t*)obj) - 1;
+		ptrdiff_t *refCount = ((ptrdiff_t*)obj) - 1;
 		// We allow refcounts to run into the negative, but should only
 		// deallocate once.
 		if (__sync_sub_and_fetch(refCount, 1) == -1)
@@ -484,7 +484,12 @@ static uint32_t ptr_hash(const void *ptr)
 {
 	// Bit-rotate right 4, since the lowest few bits in an object pointer will
 	// always be 0, which is not so useful for a hash value
+#ifdef __CHERI_PURE_CAPABILITY__
+	size_t ptrint = __builtin_memcap_base_get(ptr);
+	return (ptrint >> 4) | (ptrint << ((sizeof(size_t) * 8) - 4));
+#else
 	return ((uintptr_t)ptr >> 4) | ((uintptr_t)ptr << ((sizeof(id) * 8) - 4));
+#endif
 }
 static int weak_ref_hash(const WeakRef weak_ref)
 {
@@ -652,6 +657,7 @@ void objc_delete_weak_refs(id obj)
 {
 	LOCK_FOR_SCOPE(&weakRefLock);
 	WeakRef *oldRef = weak_ref_table_get(weakRefs, obj);
+	assert((oldRef == 0) || (obj == oldRef->obj));
 	if (0 != oldRef)
 	{
 		zeroRefs(oldRef, NO);

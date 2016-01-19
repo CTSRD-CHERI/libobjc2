@@ -28,10 +28,10 @@ extern int spinlocks[spinlock_count];
  */
 static inline volatile int *lock_for_pointer(const void *ptr)
 {
-	intptr_t hash = (intptr_t)ptr;
+	size_t hash = (size_t)ptr;
 	// Most properties will be pointers, so disregard the lowest few bits
 	hash >>= sizeof(void*) == 4 ? 2 : 8;
-	intptr_t low = hash & spinlock_mask;
+	size_t low = hash & spinlock_mask;
 	hash >>= 16;
 	hash |= low;
 	return spinlocks + (hash & spinlock_mask);

@@ -1,4 +1,11 @@
-#ifdef __LP64__
+#ifdef __CHERI_PURE_CAPABILITY__
+#define SIZEOF_PTR     (_MIPS_SZCAP / 8)
+#define DTABLE_OFFSET  (SIZEOF_PTR * 6)
+#define SMALLOBJ_BITS  3
+#define SHIFT_OFFSET   0
+#define DATA_OFFSET    (SIZEOF_PTR)
+#define SLOT_OFFSET    (4 * SIZEOF_PTR)
+#elif defined(__LP64__)
 #define DTABLE_OFFSET  64
 #define SMALLOBJ_BITS  3
 #define SHIFT_OFFSET   0

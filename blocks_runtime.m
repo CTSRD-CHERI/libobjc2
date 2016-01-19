@@ -38,6 +38,9 @@
 
 static void *_HeapBlockByRef = (void*)1;
 
+#ifdef __CHERI__
+#define __sync_bool_compare_and_swap(ptr, old, new)  ({ *ptr = new; 1; })
+#endif
 
 /**
  * Returns the Objective-C type encoding for the block.

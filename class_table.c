@@ -430,7 +430,7 @@ PRIVATE Class SmallObjectClasses[7];
 
 BOOL objc_registerSmallObjectClass_np(Class class, uintptr_t mask)
 {
-	if ((mask & OBJC_SMALL_OBJECT_MASK) != mask)
+	if ((mask & (uintptr_t)OBJC_SMALL_OBJECT_MASK) != mask)
 	{
 		return NO;
 	}

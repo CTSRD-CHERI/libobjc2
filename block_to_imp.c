@@ -32,6 +32,9 @@ void __clear_cache(void* start, void* end);
 #ifdef __QNXNTO__
 #include <nbutil.h>
 #endif
+#ifdef __CHERI__
+#define valloc(x) malloc(x)
+#endif
 
 #define PAGE_SIZE 4096
 
@@ -48,7 +51,7 @@ struct block_header
 	 */
 #if defined(__i386__) || (defined(__mips__) && !defined(__mips_n64))
 	uint64_t padding[3];
-#elif defined(__mips__)
+#elif defined(__mips__) && !defined(__CHERI_SANDBOX__)
 	uint64_t padding[2];
 #elif defined(__arm__)
 	uint64_t padding;

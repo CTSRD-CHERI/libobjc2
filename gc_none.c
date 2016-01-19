@@ -6,6 +6,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef __CHERI__
+#define __sync_bool_compare_and_swap(ptr, old, new)  ({ *ptr = new; 1; })
+#endif
+
 static id allocate_class(Class cls, size_t extraBytes)
 {
 	intptr_t *addr = calloc(cls->instance_size + extraBytes + sizeof(intptr_t), 1);

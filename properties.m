@@ -13,6 +13,9 @@
 #include "lock.h"
 
 PRIVATE int spinlocks[spinlock_count];
+#ifdef __CHERI__
+#define __sync_bool_compare_and_swap(ptr, old, new)  ({ *ptr = new; 1; })
+#endif
 
 static inline BOOL checkAttribute(char field, int attr)
 {

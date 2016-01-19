@@ -31,7 +31,7 @@ struct reference
 	/**
 	 * Association policy.
 	 */
-	uintptr_t policy;
+	size_t policy;
 };
 
 #define REFERENCE_LIST_SIZE 10
@@ -68,7 +68,7 @@ enum
 	OBJC_ASSOCIATION_ATOMIC = 0x300,
 };
 
-static BOOL isAtomic(uintptr_t policy)
+static BOOL isAtomic(size_t policy)
 {
 	return (policy & OBJC_ASSOCIATION_ATOMIC) == OBJC_ASSOCIATION_ATOMIC;
 }
