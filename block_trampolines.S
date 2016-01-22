@@ -74,6 +74,21 @@ Lnext_line2:
 	mov   %ebx, 8(%esp)        # Store the block pointer in the first argument
 	jmp   *-0x1001(%eax)           # Call the block function
 CDECL(__objc_block_trampoline_end_sret):
+#elif defined(__CHERI_PURE_CAPABILITY__)
+CDECL(__objc_block_trampoline):
+	cmove    $c4, $c3
+	daddiu   $t1, $zero, -4096
+	clc      $c3, $t1, 0($c12)
+	clc      $c12, $t1, (_MIPS_SZCAP / 8)($c12)
+	cjr      $c12
+CDECL(__objc_block_trampoline_end):
+CDECL(__objc_block_trampoline_sret):
+	cmove    $c5, $c4
+	daddiu   $t1, $zero, -4096
+	clc      $c4, $t1, 0($c12)
+	clc      $c12, $t1, (_MIPS_SZCAP / 8)($c12)
+	cjr      $c12
+CDECL(__objc_block_trampoline_end_sret):
 #elif __mips__
 #	ifdef _ABI64
 CDECL(__objc_block_trampoline):
