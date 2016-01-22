@@ -32,11 +32,20 @@ void __clear_cache(void* start, void* end);
 #ifdef __QNXNTO__
 #include <nbutil.h>
 #endif
-#ifdef __CHERI__
-#define valloc(x) malloc(x)
-#endif
 
 #define PAGE_SIZE 4096
+
+#ifdef __CHERI__
+#define valloc(x) fake_valloc(x)
+void *fake_valloc(size_t size)
+{
+	if (size % PAGE_SIZE)
+	{
+		size = (size % PAGE_SIZE) + PAGE_SIZE;
+	}
+	return mmap(0, size, PROT_READ| PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+}
+#endif
 
 struct block_header
 {
@@ -121,7 +130,9 @@ static struct trampoline_set *alloc_trampolines(char *start, char *end)
 	}
 	metadata->buffers->headers[HEADERS_PER_PAGE-1].block = NULL;
 	mprotect(metadata->buffers->rx_buffer, PAGE_SIZE, PROT_READ | PROT_EXEC);
+#ifndef __FreeBSD__
 	clear_cache(metadata->buffers->rx_buffer, &metadata->buffers->rx_buffer[PAGE_SIZE]);
+#endif
 	return metadata;
 }
 
@@ -170,7 +181,19 @@ IMP imp_implementationWithBlock(void *block)
 			assert(set->first_free >= -1);
 			h->fnptr = (void(*)(void))b->invoke;
 			h->block = b;
+#ifdef __CHERI_PURE_CAPABILITY__
+			// In a CHERI world, restrict the permissions on the capability (in
+			// particular, strip store permissions, and load-data
+			void *ptr = &set->buffers->rx_buffer[i*sizeof(struct block_header)];
+			ptr = __builtin_memcap_perms_and(ptr,
+					__CHERI_CAP_PERMISSION_GLOBAL__ |
+					__CHERI_CAP_PERMISSION_PERMIT_EXECUTE__ |
+					__CHERI_CAP_PERMISSION_PERMIT_LOAD_CAPABILITY__ |
+					0xffff8000); // User permissions
+			return (IMP)ptr;
+#else
 			return (IMP)&set->buffers->rx_buffer[i*sizeof(struct block_header)];
+#endif
 		}
 	}
 	UNREACHABLE("Failed to allocate block");
