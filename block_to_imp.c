@@ -181,19 +181,21 @@ IMP imp_implementationWithBlock(void *block)
 			assert(set->first_free >= -1);
 			h->fnptr = (void(*)(void))b->invoke;
 			h->block = b;
-#ifdef __CHERI_PURE_CAPABILITY__
+			uintptr_t addr = (uintptr_t)&set->buffers->rx_buffer[i*sizeof(struct block_header)];
+#if (__ARM_ARCH_ISA_THUMB == 2)
+			// If the trampoline is Thumb-2 code, then we must set the low bit
+			// to 1 so that b[l]x instructions put the CPU in the correct mode.
+			addr |= 1;
+#elif defined(__CHERI_PURE_CAPABILITY__)
 			// In a CHERI world, restrict the permissions on the capability (in
 			// particular, strip store permissions, and load-data
-			void *ptr = &set->buffers->rx_buffer[i*sizeof(struct block_header)];
-			ptr = __builtin_memcap_perms_and(ptr,
+			addr = (uintptr_t)__builtin_memcap_perms_and((void*)addr,
 					__CHERI_CAP_PERMISSION_GLOBAL__ |
 					__CHERI_CAP_PERMISSION_PERMIT_EXECUTE__ |
 					__CHERI_CAP_PERMISSION_PERMIT_LOAD_CAPABILITY__ |
 					0xffff8000); // User permissions
-			return (IMP)ptr;
-#else
-			return (IMP)&set->buffers->rx_buffer[i*sizeof(struct block_header)];
 #endif
+			return (IMP)addr;
 		}
 	}
 	UNREACHABLE("Failed to allocate block");
