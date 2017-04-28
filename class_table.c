@@ -390,6 +390,9 @@ PRIVATE void objc_load_class(struct objc_class *class)
 		reload_class(class, existingClass);
 		return;
 	}
+#ifdef __CHERI_PURE_CAPABILITY__
+	assert(__builtin_cheri_length_get(class) >= sizeof(*class));
+#endif
 
 	// The compiler initialises the super class pointer to the name of the
 	// superclass, not the superclass pointer.
