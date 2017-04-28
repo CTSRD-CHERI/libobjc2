@@ -1,3 +1,4 @@
+#ifndef __CHERI_PURE_CAPABILITY__
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -732,3 +733,4 @@ void objc_exception_rethrow(struct _Unwind_Exception *e)
 	_Unwind_Resume_or_Rethrow(e);
 	abort();
 }
+#endif
