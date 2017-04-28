@@ -165,11 +165,13 @@ CDECL(__objc_block_trampoline):
 	trampoline ARG0, ARG1
 .globl CDECL(__objc_block_trampoline_end)
 CDECL(__objc_block_trampoline_end):
+.size CDECL(__objc_block_trampoline), CDECL(__objc_block_trampoline_end)-CDECL(__objc_block_trampoline)
 .globl CDECL(__objc_block_trampoline_sret)
 CDECL(__objc_block_trampoline_sret):
 	trampoline SARG0, SARG1
 .globl CDECL(__objc_block_trampoline_end_sret)
 CDECL(__objc_block_trampoline_end_sret):
+.size CDECL(__objc_block_trampoline_sret), CDECL(__objc_block_trampoline_end_sret)-CDECL(__objc_block_trampoline_sret)
 
 
 #ifdef __ELF__
