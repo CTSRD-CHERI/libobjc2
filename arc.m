@@ -485,7 +485,7 @@ static uint32_t ptr_hash(const void *ptr)
 	// Bit-rotate right 4, since the lowest few bits in an object pointer will
 	// always be 0, which is not so useful for a hash value
 #ifdef __CHERI_PURE_CAPABILITY__
-	size_t ptrint = __builtin_memcap_base_get(ptr);
+	size_t ptrint = __builtin_cheri_base_get(ptr);
 	return (ptrint >> 4) | (ptrint << ((sizeof(size_t) * 8) - 4));
 #else
 	return ((uintptr_t)ptr >> 4) | ((uintptr_t)ptr << ((sizeof(id) * 8) - 4));

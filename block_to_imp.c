@@ -189,7 +189,7 @@ IMP imp_implementationWithBlock(void *block)
 #elif defined(__CHERI_PURE_CAPABILITY__)
 			// In a CHERI world, restrict the permissions on the capability (in
 			// particular, strip store permissions, and load-data
-			addr = (uintptr_t)__builtin_memcap_perms_and((void*)addr,
+			addr = (uintptr_t)__builtin_cheri_perms_and((void*)addr,
 					__CHERI_CAP_PERMISSION_GLOBAL__ |
 					__CHERI_CAP_PERMISSION_PERMIT_EXECUTE__ |
 					__CHERI_CAP_PERMISSION_PERMIT_LOAD_CAPABILITY__ |

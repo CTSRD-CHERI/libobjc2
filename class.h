@@ -22,9 +22,9 @@ struct objc_bitfield
 static inline BOOL objc_bitfield_test(uintptr_t bitfield, uint64_t field)
 {
 #ifdef __CHERI_PURE_CAPABILITY__
-	if (!__builtin_memcap_tag_get((void*)bitfield))
+	if (!__builtin_cheri_tag_get((void*)bitfield))
 	{
-		int64_t values = __builtin_memcap_offset_get((void*)bitfield) >> 1;
+		int64_t values = __builtin_cheri_offset_get((void*)bitfield) >> 1;
 		if (field >= 63)
 		{
 			return NO;
