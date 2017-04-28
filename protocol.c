@@ -4,6 +4,7 @@
 #include "class.h"
 #include "lock.h"
 #include <stdlib.h>
+#include <assert.h>
 
 #define BUFFER_TYPE struct objc_protocol_list
 #include "buffer.h"
@@ -52,6 +53,7 @@ static id incompleteProtocolClass(void)
 	{
 		IncompleteProtocolClass = objc_getClass("__IncompleteProtocol");
 	}
+	assert(IncompleteProtocolClass);
 	return IncompleteProtocolClass;
 }
 
