@@ -456,7 +456,10 @@ void objc_release(id obj)
 
 id objc_storeStrong(id *addr, id value)
 {
-	value = objc_retain(value);
+	if (nil != value)
+	{
+		value = retain(value);
+	}
 	id oldValue = *addr;
 	*addr = value;
 	objc_release(oldValue);
