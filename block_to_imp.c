@@ -43,7 +43,7 @@ void *fake_valloc(size_t size)
 	{
 		size = (size % PAGE_SIZE) + PAGE_SIZE;
 	}
-	return mmap(0, size, PROT_READ| PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+	return mmap(0, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANON | MAP_PRIVATE, -1, 0);
 }
 #endif
 
@@ -121,6 +121,9 @@ static struct trampoline_set *alloc_trampolines(char *start, char *end)
 {
 	struct trampoline_set *metadata = calloc(1, sizeof(struct trampoline_set));
 	metadata->buffers = valloc(sizeof(struct trampoline_buffers));
+#if defined(__CHERI_PURE_CAPABILITY__)
+	mprotect(metadata->buffers, PAGE_SIZE, PROT_READ | PROT_WRITE);
+#endif
 	for (int i=0 ; i<HEADERS_PER_PAGE ; i++)
 	{
 		metadata->buffers->headers[i].fnptr = (void(*)(void))invalid;
