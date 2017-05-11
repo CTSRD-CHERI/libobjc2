@@ -66,7 +66,8 @@ lw     $zero, ($zero)
 	dsll       $t2, $t2, CAP_SHIFT          # Left shift by pointer size
 	clc        $c12, $t2, DATA_OFFSET($c12) # Load the next layer of dtable
 
-	cbtu       $12, 5f                      # Nil slot - invoke some kind of forwarding mechanism
+
+	cbtu       $c12, 5f                      # Nil slot - invoke some kind of forwarding mechanism
 	nop
 
 	clc        $c12, $zero, SLOT_OFFSET($c12)
@@ -129,7 +130,7 @@ lw     $zero, ($zero)
 
 	.cfi_def_cfa_offset SAVE_SIZE
 	.cfi_offset 81, (64 - SAVE_SIZE)
-	cjalr      $c17, $c12                     # Call the slow lookup function
+	cjalr      $c12, $c17                     # Call the slow lookup function
 	csetoffset $c3, $c11, $t1
 
 	cmove      $c12, $c3                      # Move the return value to $c12 for use with the call
