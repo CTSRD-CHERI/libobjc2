@@ -68,4 +68,5 @@ endforeach()
 # Tests that are more than a single file.
 addtest_flags(CXXExceptions "-O0" "CXXException.m;CXXException.cc")
 addtest_flags(CXXExceptions_optimised "-O3" "CXXException.m;CXXException.cc")
-
+addtest_flags(Hello "-I/usr/include/GNUstep" "Hello.m")
+set_target_properties(${TEST_NAME} PROPERTIES LINK_FLAGS "-lgnustep-base")
