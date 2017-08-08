@@ -53,8 +53,10 @@ function(addtest_flags TEST_NAME FLAGS TEST_SOURCE)
 	set_property(TEST ${TEST_NAME} PROPERTY
 		ENVIRONMENT "LD_LIBRARY_PATH="
 	)
-	target_link_libraries(${TEST_NAME} objc)
+	target_link_libraries(${TEST_NAME} objc gcc_eh pthread cxxrt)
 endfunction(addtest_flags)
+
+link_directories(${CMAKE_BINARY_DIR})
 
 foreach(TEST_SOURCE ${TESTS})
 	get_filename_component(TEST ${TEST_SOURCE} NAME_WE)
