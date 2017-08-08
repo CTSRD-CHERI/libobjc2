@@ -79,7 +79,11 @@ struct _Unwind_Exception
     uint64_t exception_class;
     _Unwind_Exception_Cleanup_Fn exception_cleanup;
     unsigned long private_1;
+#ifdef __CHERI_PURE_CAPABILITY__
+    void *private_2;
+#else
     unsigned long private_2;
+#endif
   } __attribute__((__aligned__));
 
 extern _Unwind_Reason_Code _Unwind_RaiseException (struct _Unwind_Exception *);
@@ -87,13 +91,13 @@ extern _Unwind_Reason_Code _Unwind_ForcedUnwind (struct _Unwind_Exception *,
 						 _Unwind_Stop_Fn, void *);
 extern void _Unwind_Resume (struct _Unwind_Exception *);
 extern void _Unwind_DeleteException (struct _Unwind_Exception *);
-extern unsigned long _Unwind_GetGR (struct _Unwind_Context *, int);
-extern void _Unwind_SetGR (struct _Unwind_Context *, int, unsigned long);
-extern unsigned long _Unwind_GetIP (struct _Unwind_Context *);
-extern unsigned long _Unwind_GetIPInfo (struct _Unwind_Context *, int *);
-extern void _Unwind_SetIP (struct _Unwind_Context *, unsigned long);
-extern unsigned long _Unwind_GetLanguageSpecificData (struct _Unwind_Context*);
-extern unsigned long _Unwind_GetRegionStart (struct _Unwind_Context *);
+extern uintptr_t _Unwind_GetGR (struct _Unwind_Context *, int);
+extern void _Unwind_SetGR (struct _Unwind_Context *, int, uintptr_t);
+extern uintptr_t _Unwind_GetIP (struct _Unwind_Context *);
+extern uintptr_t _Unwind_GetIPInfo (struct _Unwind_Context *, int *);
+extern void _Unwind_SetIP (struct _Unwind_Context *, uintptr_t);
+extern uintptr_t _Unwind_GetLanguageSpecificData (struct _Unwind_Context*);
+extern uintptr_t _Unwind_GetRegionStart (struct _Unwind_Context *);
 
 #ifdef _GNU_SOURCE
 
@@ -118,13 +122,13 @@ extern unsigned long _Unwind_GetBSP (struct _Unwind_Context *);
 
 /* Return the "canonical frame address" for the given context.
    This is used by NPTL... */
-extern unsigned long _Unwind_GetCFA (struct _Unwind_Context *);
+extern uintptr_t _Unwind_GetCFA (struct _Unwind_Context *);
 
 /* Return the base-address for data references.  */
-extern unsigned long _Unwind_GetDataRelBase (struct _Unwind_Context *);
+extern uintptr_t _Unwind_GetDataRelBase (struct _Unwind_Context *);
 
 /* Return the base-address for text references.  */
-extern unsigned long _Unwind_GetTextRelBase (struct _Unwind_Context *);
+extern uintptr_t _Unwind_GetTextRelBase (struct _Unwind_Context *);
 
 /* Call _Unwind_Trace_Fn once for each stack-frame, without doing any
    cleanup.  The first frame for which the callback is invoked is the

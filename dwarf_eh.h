@@ -81,7 +81,7 @@ static inline int dwarf_size_of_fixed_size_field(unsigned char type)
 		case DW_EH_PE_udata2: return 2;
 		case DW_EH_PE_udata4: return 4;
 		case DW_EH_PE_udata8: return 8;
-		case DW_EH_PE_absptr: return sizeof(void*);
+		case DW_EH_PE_absptr: return sizeof(size_t);
 	}
 	abort();
 }
@@ -152,14 +152,32 @@ static uint64_t read_value(char encoding, unsigned char **data)
 			*data += sizeof(type);\
 			break;
 		READ(DW_EH_PE_udata2, uint16_t)
-		READ(DW_EH_PE_udata4, uint32_t)
+		//READ(DW_EH_PE_udata4, uint32_t)
+		case DW_EH_PE_udata4: {
+			volatile unsigned char *d = *data;
+			v = *(d++);
+			v <<= 8;
+			v += *(d++);
+			v <<= 8;
+			v += *(d++);
+			v <<= 8;
+			v += *(d++);
+			assert(*(uint32_t*)*data == v);
+			*data += 4;
+			break;
+							  }
 		READ(DW_EH_PE_udata8, uint64_t)
 		READ(DW_EH_PE_sdata2, int16_t)
 		READ(DW_EH_PE_sdata4, int32_t)
 		READ(DW_EH_PE_sdata8, int64_t)
 		case DW_EH_PE_absptr:
-			v = (uint64_t)(*(intptr_t*)(*data));
+#ifdef __CHERI_PURE_CAPABILITY__
+			v = (uint64_t)(*(int64_t*)(*data));
 			*data += sizeof(intptr_t);
+#else
+			v = (uint64_t)(*(uintptr_t*)(*data));
+			*data += sizeof(uintptr_t);
+#endif
 			break;
 		//READ(DW_EH_PE_absptr, intptr_t)
 #undef READ
@@ -175,22 +193,28 @@ static uint64_t read_value(char encoding, unsigned char **data)
 	return v;
 }
 
-static uint64_t resolve_indirect_value(struct _Unwind_Context *c, unsigned char encoding, int64_t v, dw_eh_ptr_t start)
+static uintptr_t resolve_indirect_value(struct _Unwind_Context *c, unsigned char encoding, int64_t v, dw_eh_ptr_t start)
 {
+	uintptr_t p;
 	switch (get_base(encoding))
 	{
 		case DW_EH_PE_pcrel:
-			v += (uint64_t)(uintptr_t)start;
+			p = (uintptr_t)start + v; 
 			break;
 		case DW_EH_PE_textrel:
-			v += (uint64_t)(uintptr_t)_Unwind_GetTextRelBase(c);
+			p = _Unwind_GetTextRelBase(c) + v;
 			break;
 		case DW_EH_PE_datarel:
-			v += (uint64_t)(uintptr_t)_Unwind_GetDataRelBase(c);
+			p = _Unwind_GetDataRelBase(c) + v;
 			break;
 		case DW_EH_PE_funcrel:
-			v += (uint64_t)(uintptr_t)_Unwind_GetRegionStart(c);
+			p = _Unwind_GetRegionStart(c) + v;
 		default:
+#ifdef __CHERI_PURE_CAPABILITY__
+			p = (uintptr_t)__builtin_cheri_offset_set(__builtin_cheri_program_counter_get(), v);
+#else
+			p = v;
+#endif
 			break;
 	}
 	// If this is an indirect value, then it is really the address of the real
@@ -199,15 +223,15 @@ static uint64_t resolve_indirect_value(struct _Unwind_Context *c, unsigned char 
 	// be a GCC extensions, so not properly documented...
 	if (is_indirect(encoding))
 	{
-		v = (uint64_t)(uintptr_t)*(void**)(uintptr_t)v;
+		p = *(uintptr_t*)p;
 	}
-	return v;
+	return p;
 }
 
 
 static inline void read_value_with_encoding(struct _Unwind_Context *context,
                                             dw_eh_ptr_t *data,
-                                            uint64_t *out)
+                                            uintptr_t *out)
 {
 	dw_eh_ptr_t start = *data;
 	unsigned char encoding = *((*data)++);
@@ -233,15 +257,16 @@ struct dwarf_eh_lsda
 static inline struct dwarf_eh_lsda parse_lsda(struct _Unwind_Context *context, unsigned char *data)
 {
 	struct dwarf_eh_lsda lsda;
+	void *lsda_addr = data;
 
-	lsda.region_start = (dw_eh_ptr_t)(uintptr_t)_Unwind_GetRegionStart(context);
+	lsda.region_start = (dw_eh_ptr_t)_Unwind_GetRegionStart(context);
 
 	// If the landing pads are relative to anything other than the start of
 	// this region, find out where.  This is @LPStart in the spec, although the
 	// encoding that GCC uses does not quite match the spec.
-	uint64_t v = (uint64_t)(uintptr_t)lsda.region_start;
+	uintptr_t v = (uintptr_t)lsda.region_start;
 	read_value_with_encoding(context, &data, &v);
-	lsda.landing_pads = (dw_eh_ptr_t)(uintptr_t)v;
+	lsda.landing_pads = (dw_eh_ptr_t)v;
 
 	// If there is a type table, find out where it is.  This is @TTBase in the
 	// spec.  Note: we find whether there is a type table pointer by checking
@@ -270,7 +295,6 @@ static inline struct dwarf_eh_lsda parse_lsda(struct _Unwind_Context *context, u
 	lsda.action_table = data + callsite_size;
 	// Call site table is immediately after the header
 	lsda.call_site_table = (dw_eh_ptr_t)data;
-
 
 	return lsda;
 }

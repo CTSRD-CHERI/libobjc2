@@ -1,4 +1,3 @@
-#ifndef __CHERI_PURE_CAPABILITY__
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -206,7 +205,8 @@ static Class get_type_table_entry(struct _Unwind_Context *context,
 
 	if (0 == class_name) { return Nil; }
 
-	DEBUG_LOG("Class name: %s\n", class_name);
+	assert(__builtin_cheri_tag_get(class_name));
+	DEBUG_LOG("Class name: %#p\n", class_name);
 
 	if (strcmp("@id", class_name) == 0) { return (Class)1; }
 
@@ -370,7 +370,7 @@ static inline _Unwind_Reason_Code internal_objc_personality(int version,
 		DEBUG_LOG("Foreign class: %p\n", thrown_class);
 	}
 	unsigned char *lsda_addr = (void*)_Unwind_GetLanguageSpecificData(context);
-	DEBUG_LOG("LSDA: %p\n", lsda_addr);
+	DEBUG_LOG("LSDA: %#p\n", lsda_addr);
 
 	// No LSDA implies no landing pads - try the next frame
 	if (0 == lsda_addr)
@@ -470,9 +470,11 @@ static inline _Unwind_Reason_Code internal_objc_personality(int version,
 		}
 	}
 
-	_Unwind_SetIP(context, (unsigned long)action.landing_pad);
+	assert(__builtin_cheri_tag_get(action.landing_pad));
+	assert(__builtin_cheri_perms_get(action.landing_pad) & __CHERI_CAP_PERMISSION_PERMIT_EXECUTE__);
+	_Unwind_SetIP(context, (uintptr_t)action.landing_pad);
 	_Unwind_SetGR(context, __builtin_eh_return_data_regno(0), 
-			(unsigned long)(isNew ? exceptionObject : object));
+			(uintptr_t)(isNew ? exceptionObject : object));
 	_Unwind_SetGR(context, __builtin_eh_return_data_regno(1), selector);
 
 	DEBUG_LOG("Installing context, selector %d\n", (int)selector);
@@ -486,6 +488,10 @@ BEGIN_PERSONALITY_FUNCTION(__gnu_objc_personality_v0)
 BEGIN_PERSONALITY_FUNCTION(__gnustep_objc_personality_v0)
 	return internal_objc_personality(version, actions, exceptionClass,
 			exceptionObject, context, YES);
+}
+BEGIN_PERSONALITY_FUNCTION(__gcc_personality_v0)
+	return internal_objc_personality(version, actions, exceptionClass,
+			exceptionObject, context, NO);
 }
 
 BEGIN_PERSONALITY_FUNCTION(__gnustep_objcxx_personality_v0)
@@ -559,11 +565,12 @@ struct thread_data *get_thread_data(void)
 		if (pthread_getspecific(key) == NULL)
 		{
 			fprintf(stderr, "Unable to allocate thread-local storage for exceptions\n");
+			abort();
 		}
 	}
 	return td;
 #else
-	return &td;
+	return &thread_data;
 #endif
 }
 
@@ -573,7 +580,7 @@ struct thread_data *get_thread_data_fast(void)
 	struct thread_data *td = pthread_getspecific(key);
 	return td;
 #else
-	return &td;
+	return &thread_data;
 #endif
 }
 
@@ -733,4 +740,3 @@ void objc_exception_rethrow(struct _Unwind_Exception *e)
 	_Unwind_Resume_or_Rethrow(e);
 	abort();
 }
-#endif

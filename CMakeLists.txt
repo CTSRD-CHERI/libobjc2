@@ -10,7 +10,6 @@ set(CMAKE_C_FLAGS "-std=gnu99 ${CMAKE_C_FLAGS}")
 
 set(libobjc_VERSION 4.6)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-exceptions -fno-objc-exceptions")
 # Build configuration
 add_definitions( -DGNUSTEP -D__OBJC_RUNTIME_INTERNAL__=1)
 # Probably not needed anymore?
