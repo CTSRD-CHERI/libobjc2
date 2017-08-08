@@ -33,11 +33,15 @@ int finally(void)
 int rethrow_id(void)
 {
 	@try { finally(); }
-	@catch(id x)
+	@catch(Test *x)
 	{
 		assert(object_getClass(x) == [Test class]);
 		idRethrown = YES;
 		@throw;
+	}
+	@catch(id x)
+	{
+		assert(0);
 	}
 	return 0;
 }
