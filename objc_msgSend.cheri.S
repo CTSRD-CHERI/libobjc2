@@ -128,8 +128,9 @@ lw     $zero, ($zero)
 	cmove      $c4, $c5                       # replace self with _cmd in $c4
 .endif
 
+	.cfi_def_cfa_register 29
 	.cfi_def_cfa_offset SAVE_SIZE
-	.cfi_offset 81, (64 - SAVE_SIZE)
+	.cfi_offset 89, (64 - SAVE_SIZE)
 	cjalr      $c12, $c17                     # Call the slow lookup function
 	csetoffset $c3, $c11, $t1
 
