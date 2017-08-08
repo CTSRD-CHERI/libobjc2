@@ -231,7 +231,7 @@ set(objc_LINK_FLAGS "${objc_LINK_FLAGS} ${CMAKE_THREAD_LIBS_INIT}")
 
 set_property(TARGET PROPERTY NO_SONAME true)
 
-set(BUILD_STATIC_LIBOBJC false CACHE BOOL
+set(BUILD_STATIC_LIBOBJC true CACHE BOOL
 	"Build the static version of libobjc")
 if (BUILD_STATIC_LIBOBJC)
 	add_library(objc-static STATIC ${libobjc_C_SRCS} ${libobjc_ASM_SRCS} ${libobjc_OBJC_SRCS} ${libobjc_CXX_SRCS})
