@@ -89,7 +89,7 @@ typedef struct objc_object
 	__attribute__((deprecated))
 #endif
 	Class isa;
-} *id;
+} *__capability id;
 
 /**
  * Structure used for calling superclass methods.
@@ -186,6 +186,10 @@ typedef struct
 	const char *value;
 } objc_property_attribute_t;
 
+/**
+ * Opaque type for Objective-C planes.
+ */
+typedef void * __capability Plane;
 
 
 #ifndef YES
@@ -993,6 +997,15 @@ id object_getPrototype_np(id object);
  */
 int objc_set_apple_compatible_objcxx_exceptions(int newValue) OBJC_NONPORTABLE;
 
+/**
+ * Creates a new plane and returns the plane system reference.
+ */
+Plane plane_create(id plane_obj);
+
+/**
+ * Destroy the plane referenced by the given system reference.
+ */
+void plane_destroy(Plane plane);
 
 #define _C_ID       '@'
 #define _C_CLASS    '#'

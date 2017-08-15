@@ -17,14 +17,16 @@ add_definitions( -D_XOPEN_SOURCE=700 -D__BSD_VISIBLE=1 -D_BSD_SOURCE=1)
 
 set(libobjc_ASM_SRCS 
 	block_trampolines.S
-	objc_msgSend.S)
+	objc_msgSend.S
+	objc_msgSend_plane.S)
 set(libobjc_OBJC_SRCS 
 	NSBlocks.m
 	Protocol2.m
 	arc.m
 	associate.m
 	blocks_runtime.m
-	properties.m)
+	properties.m
+	ObjectPlane.m)
 set(libobjc_C_SRCS 
 	abi_version.c
 	alias_table.c
@@ -41,6 +43,7 @@ set(libobjc_C_SRCS
 	legacy_malloc.c
 	loader.c
 	mutation.m
+	plane.c
 	protocol.c
 	runtime.c
 	sarray2.c
@@ -51,6 +54,7 @@ set(libobjc_C_SRCS
 set(libobjc_HDRS
 	objc/Availability.h
 	objc/Object.h
+	objc/ObjectPlane.h
 	objc/Protocol.h
 	objc/blocks_private.h
 	objc/blocks_runtime.h
@@ -135,7 +139,7 @@ set(INCLUDE_DIRECTORY "objc" CACHE STRING
 if (${CMAKE_C_COMPILER_ID} MATCHES Clang*)
 	set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -Wno-deprecated-objc-isa-usage -Wno-objc-root-class")
 	if (${CMAKE_C_COMPILER_VERSION} VERSION_GREATER 3.1)
-		set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -fobjc-runtime=gnustep-1.9")
+		set(CMAKE_OBJC_FLAGS "${CMAKE_OBJC_FLAGS} -fobjc-runtime=gnustep-1.9 -Xclang -fobjc-dispatch-method=non-legacy")
 	endif ()
 else (${CMAKE_C_COMPILER_ID} MATCHES Clang*)
 	MESSAGE("WARNING: It is strongly recommended that you compile with clang")
@@ -144,6 +148,8 @@ endif (${CMAKE_C_COMPILER_ID} MATCHES Clang*)
 if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "i686")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=i586")
 endif ()
+
+include_directories(${CMAKE_SOURCE_DIR})
 
 #set(INSTALL_TARGETS objc)
 

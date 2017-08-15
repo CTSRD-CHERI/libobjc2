@@ -19,3 +19,4 @@
 #define SLOT_OFFSET    16
 #endif
 #define SMALLOBJ_MASK  ((1<<SMALLOBJ_BITS) - 1)
+#define CAP_BYTES      (_MIPS_SZCAP / 8)

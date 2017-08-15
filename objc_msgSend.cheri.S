@@ -8,7 +8,6 @@ jalr   $25
 nop
 lw     $zero, ($zero)
 .endm
-#define CAP_BYTES (_MIPS_SZCAP/8)
 #if _MIPS_SZCAP == 256
 #define CAP_SHIFT 5
 #elif _MIPS_SZCAP == 128
@@ -33,12 +32,26 @@ lw     $zero, ($zero)
 	                                        # the stuff except the slow call,
 	                                        # because that's the only one that
 	                                        # can throw.
+	
 	cgetoffset $t9, $c12
 	lui        $t8, %hi(%neg(%gp_rel(0b)))  # Load the GOT address that we use for relocations into $t8
 	daddu      $t8, $t8, $t9
-	cbtu       \receiver,  6f
+
+	cbtu       \receiver,  7f
 	daddiu     $t8, $t8, %lo(%neg(%gp_rel(0b)))
 
+	cgetsealed $t9, \receiver               # If the receiver is from another plane, i.e. a sealed reference,
+	beq        $0, $t9, 1f                  # call the system
+	nop
+	daddiu     $t1, $t8, %got_disp(objc_msgSend_plane) # Load the system call.  XXX: in reality this
+	cfromptr   $c12, $c0, $t1               # would not be needed as the call would be a system call, e.g. CCall
+	cld        $t1, $zero, 0($c12)
+	cgetpcc    $c12
+	csetoffset $c12, $c12, $t1
+	cjr        $c12                         # Hand off to the system
+	nop
+
+1:                                          # samePlane:
 	clc        $c12, $zero, 0(\receiver)    # Load the class.  By this
 	                                        # point, we have a non-nil capability to a large object.
 1:
@@ -94,6 +107,7 @@ lw     $zero, ($zero)
 	cgetpcc    $c12
 	csetoffset $c12, $c12, $t1
 
+6:
 	daddiu     $sp, $sp, -SAVE_SIZE             # We need to preserve all registers that may contain arguments:
 
 	csd        $a0, $sp, 0($c11)
@@ -131,7 +145,7 @@ lw     $zero, ($zero)
 	.cfi_def_cfa_register 29
 	.cfi_def_cfa_offset SAVE_SIZE
 	.cfi_offset 89, (64 - SAVE_SIZE)
-	cjalr      $c12, $c17                     # Call the slow lookup function
+	cjalr      $c12, $c17                     # Call the slow lookup or the system-call function
 	csetoffset $c3, $c11, $t1
 
 	cmove      $c12, $c3                      # Move the return value to $c12 for use with the call
@@ -160,7 +174,7 @@ lw     $zero, ($zero)
 	cjr        $c12                          # Tail-call the method
 	daddiu     $sp, $sp, SAVE_SIZE           # Restore the stack pointer (delay slot)
 
-6:	                                         # smallObject:
+7:	                                         # smallObject:
 	cfromptr   $c12, $c0, $zero
 	ceq        $t1, $c12, \receiver
 	bne        $t1, $zero, 4b
