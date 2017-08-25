@@ -28,8 +28,11 @@
 
 
 /**
- * This file contains the privileged/supervisor side for object planes.  In a CheriOS-based
- * environment, this would be factored into the microkernel as a kernel object.
+ * This file contains the trusted intermediary for object planes.  The runtime
+ * would need to CCall to call the functionality in here.
+ *
+ * In a CheriOS-based environment, this would be factored into the microkernel
+ * as just another kernel object that implements a system call.
  */
 
 struct plane {
@@ -107,19 +110,20 @@ void plane_destroy(Plane pref)
 	pref = cheri_unseal(pref, plane_ref_seal);
 	uintmax_t pid = cheri_getoffset(pref);
 
-	// Invalidate plane.  TODO: decrement plane_count and adjust array
+	// Destroy the plane.  This would deallocate the plane object
 	assert(pid < MAX_PLANES);
 	struct plane *plane = &planes[pid];
 	assert(plane->valid == YES);
 	plane->valid = NO;
+	plane_count--;
 }
 
 /**
  * Accepts pointers to arrays of argument registers to simplify the ABI dependency.
  * Assumes a message that returns values in registers
  */
-// XXX: Is this reentrant? e.g. sendMessage could look at the sealed sender's plane, retriggering the
-// plane changing mechanism
+// XXX: Is this reentrant? e.g. sendMessage could interact with the sealed sender's plane,
+// retriggering the plane changing mechanism
 void objc_msgSend_plane_1(id receiver, SEL _cmd,
                         register_t *msg_noncap_args, __uintcap_t *msg_cap_args)
 {

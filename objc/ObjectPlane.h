@@ -18,7 +18,8 @@ struct retval_regs {
 + (id)alloc;
 - (void)dealloc;
 - (id)init;
-- (id)allocObject: (Class)cls;
+- (id)allocObject :(Class)cls;
+
 // If you change the sendMessage signature, update it in the macro and
 // typedef below too
 - (struct retval_regs)sendMessage :(id)receiver :(SEL)selector :(id)senders_plane
@@ -26,6 +27,9 @@ struct retval_regs {
                   :(register_t)a4 :(register_t)a5 :(register_t)a6 :(register_t)a7
                   :(__uintcap_t)c3 :(__uintcap_t)c4 :(__uintcap_t)c5 :(__uintcap_t)c6
                   :(__uintcap_t)c7 :(__uintcap_t)c8 :(__uintcap_t)c9 :(__uintcap_t)c10;
+
+- (int)sum :(int)a0 :(int)a1 :(int)a2 :(int)a3
+           :(int)a4 :(int)a5 :(int)a6 :(int)a7;
 
 @end
 #else

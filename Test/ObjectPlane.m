@@ -11,6 +11,7 @@ int main()
 	id ret = [plane init];
 	printf("Init'd plane object\n");
 	assert(ret == plane);
+	assert([plane sum :1 :1 :2 :3 :5 :8 :13 :21] == 55 - 1);
 
 	id plane_nested = [plane allocObject :objc_getRequiredClass("ObjectPlane")];
 	assert(plane_nested != nil);

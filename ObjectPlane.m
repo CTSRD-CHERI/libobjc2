@@ -28,8 +28,11 @@
 @implementation ObjectPlane
 
 /**
- * Allocates an object plane within the Objective-C runtime.  Returns a sealed ObjectPlane reference.
- * XXX: Note that the first alloc call is reentered via plane_create().
+ * Allocates an object plane within the Objective-C runtime.  Returns a sealed
+ * ObjectPlane reference.
+ *
+ * Note: the first alloc call is reentered due to the global plane allocation
+ * in plane_create().
  */
 + (id)alloc
 {
@@ -58,7 +61,7 @@
 	// Ask the system to destroy the plane
 	plane_destroy(plane_sysref);
 
-	// Free calloc'd memory.  XXX: Is free available for CHERI caps?
+	// Free calloc'd memory
 	free(self);
 }
 
@@ -74,11 +77,12 @@
 }
 
 /**
- * Allocate an object within this plane.  Returns a sealed object reference.
+ * Allocates an object of the given class within this plane.  Returns a sealed
+ * object reference.
  *
- * XXX: can I receive the allocating method as argument (selector? HOM?)
+ * Assumes allocation is done via an "alloc" message.
  */
-- (id)allocObject: (Class)class
+- (id)allocObject :(Class)class
 {
 	id obj = [class alloc];
 	if (cheri_gettag(obj) != 0 && cheri_getsealed(obj) == 0)
@@ -86,7 +90,11 @@
 	return obj;
 }
 
-// TODO: echo() method test
+- (int)sum :(int)a0 :(int)a1 :(int)a2 :(int)a3
+           :(int)a4 :(int)a5 :(int)a6 :(int)a7
+{
+	return a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7;
+}
 
 /**
  * Assumes a message that returns values in registers
@@ -98,7 +106,7 @@ void sendMessage_0(id receiver, SEL selector, register_t *msg_noncap_args, __uin
  * Send a message to an object within this object plane.  Copy over the result
  * upon return.
  *
- * Assumes a message that returns values in registers
+ * Assumes a message that returns values in registers.
  */
 - (struct retval_regs)sendMessage :(id)receiver :(SEL)selector :(id)senders_plane
                   :(register_t)a0 :(register_t)a1 :(register_t)a2 :(register_t)a3
