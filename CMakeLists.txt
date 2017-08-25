@@ -18,7 +18,8 @@ add_definitions( -D_XOPEN_SOURCE=700 -D__BSD_VISIBLE=1 -D_BSD_SOURCE=1)
 set(libobjc_ASM_SRCS 
 	block_trampolines.S
 	objc_msgSend.S
-	objc_msgSend_plane.S)
+	objc_msgSend_plane.S
+	ObjectPlane_sendMessage.S)
 set(libobjc_OBJC_SRCS 
 	NSBlocks.m
 	Protocol2.m

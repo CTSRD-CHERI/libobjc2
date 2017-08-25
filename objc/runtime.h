@@ -74,7 +74,7 @@ typedef struct objc_selector *SEL;
 /**
  * Opaque type for Objective-C classes.
  */
-typedef struct objc_class *Class;
+typedef struct objc_class *__capability Class;
 
 /**
  * Type for Objective-C objects.

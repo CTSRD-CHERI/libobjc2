@@ -33,8 +33,9 @@
  */
 + (id)alloc
 {
-	// Allocate the plane object.  XXX: Is calloc available for CHERI caps?
+	// Allocate the plane object
 	void * __capability plane_obj = calloc(1, class_getInstanceSize(self));
+	printf("calloc(1, %zx): %p\n", class_getInstanceSize(self), plane_obj);
 	if (plane_obj == NULL)
 		return nil;
 	object_setClass(plane_obj, self);
@@ -64,9 +65,9 @@
 /**
  * Initialize the plane object.
  */
-- (id)init: (BOOL)nest
+- (id)init
 {
-	printf("%s(nest=%s)\n", __func__, nest ? "YES" : "NO");
+	printf("%s() self=%p\n", __func__, self);
 	// self does not need sealing because init() is a normal method call whose return
 	// values are sealed upon exit from the plane
 	return self;
@@ -74,32 +75,38 @@
 
 /**
  * Allocate an object within this plane.  Returns a sealed object reference.
+ *
+ * XXX: can I receive the allocating method as argument (selector? HOM?)
  */
 - (id)allocObject: (Class)class
 {
-	// XXX: can I receive the allocating method as argument (selector? HOM?)
 	id obj = [class alloc];
-	return cheri_seal(obj, plane_seal);
+	if (cheri_gettag(obj) != 0 && cheri_getsealed(obj) == 0)
+		obj = cheri_seal(obj, plane_seal);
+	return obj;
 }
 
-// TODO: implement this in ObjectPlane.S
-static id send_message(id receiver, SEL selector, register_t *msg_noncap_args, __uintcap_t *msg_cap_args)
-{
-	printf("%s(...)\n", __func__);
-	return nil;
-}
+// TODO: echo() method test
+
+/**
+ * Assumes a message that returns values in registers
+ */
+void sendMessage_0(id receiver, SEL selector, register_t *msg_noncap_args, __uintcap_t *msg_cap_args);
 
 
 /**
- * Send a message to an object within this object plane.
+ * Send a message to an object within this object plane.  Copy over the result
+ * upon return.
+ *
+ * Assumes a message that returns values in registers
  */
-- (id)sendMessage :(id)receiver :(SEL)selector :(id)senders_plane
+- (struct retval_regs)sendMessage :(id)receiver :(SEL)selector :(id)senders_plane
                   :(register_t)a0 :(register_t)a1 :(register_t)a2 :(register_t)a3
 				  :(register_t)a4 :(register_t)a5 :(register_t)a6 :(register_t)a7
 				  :(__uintcap_t)c3 :(__uintcap_t)c4 :(__uintcap_t)c5 :(__uintcap_t)c6
 				  :(__uintcap_t)c7 :(__uintcap_t)c8 :(__uintcap_t)c9 :(__uintcap_t)c10
 {
-	printf("%s()\n", __func__);
+	printf("%s(receiver= _, selector=%s)\n", __func__, sel_getName(selector));
 	register_t msg_noncap_args[8] = {a0, a1, a2, a3, a4, a5, a6, a7};
 	__uintcap_t msg_cap_args[8] = {c3, c4, c5, c6, c7, c8, c9, c10};
 
@@ -107,6 +114,7 @@ static id send_message(id receiver, SEL selector, register_t *msg_noncap_args, _
 	uintmax_t ptype = cheri_getbase(plane_seal) + cheri_getoffset(plane_seal);
 	assert(cheri_gettype(receiver) == ptype);
 	receiver = cheri_unseal(receiver, plane_seal);
+	printf("\treceiver=%s\n", object_getClassName(receiver));
 	for (int i = 0; i < 8; i++)
 		// XXX: Find and only unseal Objective-C object references
 		if (cheri_getsealed(msg_cap_args[i]) != 0 && cheri_gettype(msg_cap_args[i]) == ptype)
@@ -116,7 +124,16 @@ static id send_message(id receiver, SEL selector, register_t *msg_noncap_args, _
 	//[self doEnter :&receiver :&selector :senders_plane :msg_noncap_args :msg_cap_args];
 
 	// Send message to the receiving object
-	id ret = send_message(receiver, selector, msg_noncap_args, msg_cap_args);
+	sendMessage_0(receiver, selector, msg_noncap_args, msg_cap_args);
+	register_t *msg_noncap_retval = msg_noncap_args;
+	__uintcap_t *msg_cap_retval = msg_cap_args;
+	struct retval_regs ret = {.v0 = msg_noncap_retval[0],
+	                          .v1 = msg_noncap_retval[1],
+	                          .c3 = msg_cap_args[0]};
+	printf("sendMessage_0:\n"
+	       "\tret.noncap_one=%lx\n"
+	       "\tret.noncap_other=%lx\n\t", ret.v0, ret.v1);
+	CHERI_CAP_PRINT(ret.c3);
 
 	// Hook the exit method TODO
 	//[self doExit :receiver :selector :senders_plane];

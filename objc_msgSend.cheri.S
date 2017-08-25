@@ -145,7 +145,7 @@ lw     $zero, ($zero)
 	.cfi_def_cfa_register 29
 	.cfi_def_cfa_offset SAVE_SIZE
 	.cfi_offset 89, (64 - SAVE_SIZE)
-	cjalr      $c12, $c17                     # Call the slow lookup or the system-call function
+	cjalr      $c12, $c17                     # Call the slow lookup
 	csetoffset $c3, $c11, $t1
 
 	cmove      $c12, $c3                      # Move the return value to $c12 for use with the call

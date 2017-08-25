@@ -1,4 +1,10 @@
+#ifndef __OBJC_OBJECTPLANE_H_INCLUDED__
 #include <objc/runtime.h>
+
+struct retval_regs {
+	register_t v0, v1;
+	__uintcap_t c3;
+};
 
 #ifdef __OBJC__
 #import "Object.h"
@@ -11,10 +17,11 @@
 }
 + (id)alloc;
 - (void)dealloc;
-- (id)init: (BOOL)nest;
+- (id)init;
 - (id)allocObject: (Class)cls;
-// If you change the sendMessage signature, update it below too
-- (id)sendMessage :(id)receiver :(SEL)selector :(id)senders_plane
+// If you change the sendMessage signature, update it in the macro and
+// typedef below too
+- (struct retval_regs)sendMessage :(id)receiver :(SEL)selector :(id)senders_plane
                   :(register_t)a0 :(register_t)a1 :(register_t)a2 :(register_t)a3
                   :(register_t)a4 :(register_t)a5 :(register_t)a6 :(register_t)a7
                   :(__uintcap_t)c3 :(__uintcap_t)c4 :(__uintcap_t)c5 :(__uintcap_t)c6
@@ -22,11 +29,16 @@
 
 @end
 #else
-typedef id (*objc_msgSend_sendMessage_t)(id, SEL,
-					    // sendMessage arguments below
-                        id, SEL, id,
-                        register_t, register_t, register_t, register_t,
-                        register_t, register_t, register_t, register_t,
-                        __uintcap_t, __uintcap_t, __uintcap_t, __uintcap_t,
-                        __uintcap_t, __uintcap_t, __uintcap_t, __uintcap_t);
+
+// sendMessage arguments denoted by the colons
+#define sendMessage_sel_name    "sendMessage:::::::::::::::::::"
+
+typedef struct retval_regs (*objc_msgSend_stret_sendMessage_t)(id, SEL,
+					        // sendMessage arguments below
+                            id, SEL, id,
+                            register_t, register_t, register_t, register_t,
+                            register_t, register_t, register_t, register_t,
+                            __uintcap_t, __uintcap_t, __uintcap_t, __uintcap_t,
+                            __uintcap_t, __uintcap_t, __uintcap_t, __uintcap_t);
 #endif  /* __OBJC__ */
+#endif  /* __OBJC_OBJECTPLANE_H_INCLUDED__ */

@@ -8,8 +8,9 @@ int main()
 	printf("About to alloc plane object\n");
 	id plane = [ObjectPlane alloc];
 	printf("Alloc'd plane object %p\n", plane);
-	[plane init :YES];
+	id ret = [plane init];
 	printf("Init'd plane object\n");
+	assert(ret == plane);
 
 	id plane_nested = [plane allocObject :objc_getRequiredClass("ObjectPlane")];
 	assert(plane_nested != nil);

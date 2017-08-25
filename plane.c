@@ -21,6 +21,11 @@
 	    (uintmax_t)cheri_gettype(cap));				\
 } while (0)
 
+#define OBJECT_GET_IVAR(obj, ivar_type, ivar_name) ({ \
+	ivar_type *ivar_name##_ptr;   \
+	object_getInstanceVariable((obj), #ivar_name, (void**)&ivar_name##_ptr);   \
+	*ivar_name##_ptr; })
+
 
 /**
  * This file contains the privileged/supervisor side for object planes.  In a CheriOS-based
@@ -72,6 +77,7 @@ Plane plane_create(id plane_obj)
 		plane_init();
 
 	assert(plane_count < MAX_PLANES);
+	assert(cheri_getsealed(plane_obj) == 0);
 
 	// Allocate a new type capability and set it in the plane object provided.
 	// This assigns plane_id = plane_type and uses ID as index.  This would ensure
@@ -96,9 +102,10 @@ Plane plane_create(id plane_obj)
 void plane_destroy(Plane pref)
 {
 	// Extract plane id from reference
-	assert(cheri_gettype(pref) == cheri_gettype(plane_ref_seal));
+	uintmax_t pref_type = cheri_getbase(plane_ref_seal) + cheri_getoffset(plane_ref_seal);
+	assert(cheri_gettype(pref) == pref_type);
 	pref = cheri_unseal(pref, plane_ref_seal);
-	int pid = cheri_getoffset(pref);
+	uintmax_t pid = cheri_getoffset(pref);
 
 	// Invalidate plane.  TODO: decrement plane_count and adjust array
 	assert(pid < MAX_PLANES);
@@ -107,22 +114,27 @@ void plane_destroy(Plane pref)
 	plane->valid = NO;
 }
 
+/**
+ * Accepts pointers to arrays of argument registers to simplify the ABI dependency.
+ * Assumes a message that returns values in registers
+ */
 // XXX: Is this reentrant? e.g. sendMessage could look at the sealed sender's plane, retriggering the
 // plane changing mechanism
-id objc_msgSend_plane_1(id receiver, SEL _cmd,
+void objc_msgSend_plane_1(id receiver, SEL _cmd,
                         register_t *msg_noncap_args, __uintcap_t *msg_cap_args)
 {
 	assert(cheri_getsealed(receiver) != 0);
 
-	// Seal unsealed argument object references using the current plane's seal.
-	void * __capability *pcur_seal_ptr;
-	object_getInstanceVariable(plane_cur->plane_obj, "plane_seal", (void**)&pcur_seal_ptr);
-	void * __capability pcur_seal = *pcur_seal_ptr;
-	assert((cheri_getperm(pcur_seal) & CHERI_PERM_SEAL) != 0);
+	// Seal unsealed argument object references using the sender's plane seal
+	struct plane *senders_plane = plane_cur;
+	assert(senders_plane->valid == YES);
+	void *__capability splane_seal = OBJECT_GET_IVAR(senders_plane->plane_obj,
+	                                                 void *__capability, plane_seal);
+	assert((cheri_getperm(splane_seal) & CHERI_PERM_SEAL) != 0);
 	for (int i = 0; i < 8; i++)
 		// XXX: Find and only seal Objective-C object references
 		if (cheri_gettag(msg_cap_args[i]) != 0 && cheri_getsealed(msg_cap_args[i]) == 0)
-			msg_cap_args[i] = (__uintcap_t)cheri_seal(msg_cap_args[i], pcur_seal);
+			msg_cap_args[i] = (__uintcap_t)cheri_seal(msg_cap_args[i], splane_seal);
 
 	// Get the receiver's plane
 	uintmax_t ptype = cheri_gettype(receiver);
@@ -130,18 +142,18 @@ id objc_msgSend_plane_1(id receiver, SEL _cmd,
 	struct plane *receivers_plane = &planes[ptype];
 
 	// Change the current plane to the receiver's plane
-	struct plane *senders_plane = plane_cur;
+	assert(receivers_plane->valid == YES);
 	plane_cur = receivers_plane;
-	assert(plane_cur->valid == YES);
 
 	// Ask the receiver's plane(s) to send the message.  Copy over the arguments.
 	// TODO: senders_plane->plane_obj should be sealed
-	SEL send = sel_getUid("sendMessage:::::::::::::::::::");
+	SEL send = sel_getUid(sendMessage_sel_name);
 	assert(send != NULL);
 	printf("About to sendMessage\n");
-	objc_msgSend_sendMessage_t objc_msgSend_sendMessage =
-	                                   (objc_msgSend_sendMessage_t)objc_msgSend;
-	id ret = objc_msgSend_sendMessage(receivers_plane->plane_obj, send,
+	objc_msgSend_stret_sendMessage_t objc_msgSend_stret_sendMessage =
+	                       (objc_msgSend_stret_sendMessage_t)objc_msgSend_stret;
+	struct retval_regs ret = objc_msgSend_stret_sendMessage(
+	                                  receivers_plane->plane_obj, send,
 	                                  receiver, _cmd, senders_plane->plane_obj,
 	                                  msg_noncap_args[0], msg_noncap_args[1],
 						              msg_noncap_args[2], msg_noncap_args[3],
@@ -151,10 +163,26 @@ id objc_msgSend_plane_1(id receiver, SEL _cmd,
 						              msg_cap_args[2], msg_cap_args[3],
 	                                  msg_cap_args[4], msg_cap_args[5],
 						              msg_cap_args[6], msg_cap_args[7]);
+	printf("objc_msgSend_stret_sendMessage():\n"
+	       "\tret.noncap_one=%lx\n"
+	       "\tret.noncap_other=%lx\n\t", ret.v0, ret.v1);
+	CHERI_CAP_PRINT(ret.c3);
+
+	// Seal unsealed return object reference using the receiver's plane seal
+	// XXX: Find and only seal Objective-C object references
+	void *__capability rplane_seal = OBJECT_GET_IVAR(receivers_plane->plane_obj,
+	                                                 void *__capability, plane_seal);
+	assert((cheri_getperm(rplane_seal) & CHERI_PERM_SEAL) != 0);
+	if (cheri_gettag(ret.c3) != 0 && cheri_getsealed(ret.c3) == 0)
+		ret.c3 = (__uintcap_t)cheri_seal(ret.c3, rplane_seal);
 
 	// Change the current plane back to the sender's plane
 	plane_cur = senders_plane;
 
 	// Return the result of the message
-	return ret;
+	register_t *msg_noncap_retval = msg_noncap_args;
+	__uintcap_t *msg_cap_retval = msg_cap_args;
+	msg_noncap_retval[0] = ret.v0;
+	msg_noncap_retval[1] = ret.v1;
+	msg_cap_retval[0] = ret.c3;
 }

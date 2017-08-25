@@ -1,6 +1,8 @@
 #define SAVE_SIZE              (8*8 + 1*CAP_BYTES + 8*CAP_BYTES)
 
-# TODO _stret and friends
+# TODO _stret and friends.  XXX doubt this still needs to be considered?
+
+.set noreorder
 
 .globl objc_msgSend_plane
 TYPE_DIRECTIVE(objc_msgSend_plane, @function)
@@ -33,10 +35,13 @@ objc_msgSend_plane:                           # aka objc_msgSend_plane_0
 
 	csetoffset $c5, $c11, $sp                 # Pass in saved non-capability arguments
 	daddiu     $t1, $sp, (64 + CAP_BYTES*1)
-	csetoffset $c6, $c11, $t1                 # Pass in saved capability arguments (delay slot)
 	cjalr      $c12, $c17                     # Call C function
-	nop                                       # XXX: why doesn't the delay slot work?
+	csetoffset $c6, $c11, $t1                 # Pass in saved capability arguments (delay slot)
 
 	clc        $c17, $sp, 64($c11)
+	cld        $v0, $sp, 0($c11)              # Retrieve the return registers' values
+	cld        $v1, $sp, 8($c11)
+	clc        $c3, $sp, (64 + CAP_BYTES*1)($c11)
+
 	cjr        $c17                           # Return to caller
 	daddiu     $sp, $sp, SAVE_SIZE            # Restore the stack pointer (delay slot)
