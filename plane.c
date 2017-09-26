@@ -67,6 +67,7 @@
 
 struct plane {
 	id plane_obj;
+	id plane_obj_sealed;
 	BOOL valid;
 };
 
@@ -123,6 +124,7 @@ Plane plane_create(id plane_obj)
 
 	// Allocate a new plane
 	planes[pid].plane_obj = plane_obj;
+	planes[pid].plane_obj_sealed = cheri_seal(plane_obj, pseal);
 	planes[pid].valid = YES;
 	plane_count++;
 
@@ -180,7 +182,6 @@ void objc_msgSend_plane_1(id receiver, SEL _cmd,
 	plane_cur = receivers_plane;
 
 	// Ask the receiver's plane(s) to send the message.  Copy over the arguments.
-	// TODO: senders_plane->plane_obj should be sealed
 	SEL send = sel_getUid(sendMessage_sel_name);
 	assert(send != NULL);
 	printf("About to sendMessage\n");
@@ -188,7 +189,7 @@ void objc_msgSend_plane_1(id receiver, SEL _cmd,
 	                       (objc_msgSend_stret_sendMessage_t)objc_msgSend_stret;
 	struct retval_regs ret = objc_msgSend_stret_sendMessage(
 	                                  receivers_plane->plane_obj, send,
-	                                  receiver, _cmd, senders_plane->plane_obj,
+	                                  receiver, _cmd, senders_plane->plane_obj_sealed,
 	                                  msg_noncap_args[0], msg_noncap_args[1],
 						              msg_noncap_args[2], msg_noncap_args[3],
 	                                  msg_noncap_args[4], msg_noncap_args[5],
