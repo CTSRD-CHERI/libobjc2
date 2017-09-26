@@ -46,8 +46,9 @@ struct retval_regs {
 	Plane plane_sysref;
 }
 + (id)alloc;
-- (void)dealloc;
 - (id)init;
+- (void)dealloc;
+
 - (id)allocObject :(Class)cls;
 
 // If you change the sendMessage signature, update it in the macro and
@@ -64,7 +65,7 @@ struct retval_regs {
 @end
 #else
 
-// sendMessage arguments denoted by the colons
+// sendMessage selector name, colons denote the arguments
 #define sendMessage_sel_name    "sendMessage:::::::::::::::::::"
 
 typedef struct retval_regs (*objc_msgSend_stret_sendMessage_t)(id, SEL,

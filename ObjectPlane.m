@@ -51,8 +51,9 @@
 } while (0)
 
 /**
- * This file implements the Objective-C ObjectPlane assuming a trusted intermediary that provides
- * the object reference protection.
+ * This file implements a programmer interface to the ObjC-runtime plane.
+ *
+ * See ctsrd/reports/20170929-lmp53-internship-report.
  */
 
 @implementation ObjectPlane

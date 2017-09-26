@@ -33,6 +33,12 @@
 
 #import <objc/ObjectPlane.h>
 
+/**
+ * This file implements a test for the CHERI Object Planes.
+ *
+ * See ctsrd/reports/20170929-lmp53-internship-report.
+ */
+
 int main()
 {
 	printf("About to alloc plane object\n");

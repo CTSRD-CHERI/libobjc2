@@ -40,7 +40,7 @@ lw     $zero, ($zero)
 	daddu  $t8, $t8, $t9
 	daddiu $t8, $t8, %lo(%neg(%gp_rel(0b)))
 
-											# TODO: HybridABI object plane handling
+											# TODO: HybridABI object planes handling
 
 
 	andi   $t0, \receiver, SMALLOBJ_MASK    # Check if the receiver is a small object

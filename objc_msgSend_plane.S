@@ -19,7 +19,7 @@ objc_msgSend_plane:                           # aka objc_msgSend_plane_0
 	csd        $a1, $sp, 8($c11)
 	csd        $a2, $sp, 16($c11)
 	csd        $a3, $sp, 24($c11)
-	csd        $a4, $sp, 32($c11)             # XXX: are these required or just temporary regs?
+	csd        $a4, $sp, 32($c11)
 	csd        $a5, $sp, 40($c11)
 	csd        $a6, $sp, 48($c11)
 	csd        $a7, $sp, 56($c11)

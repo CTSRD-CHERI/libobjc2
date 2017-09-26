@@ -58,11 +58,13 @@
 
 
 /**
- * This file contains the trusted intermediary for object planes.  The runtime
- * would need to CCall to call the functionality in here.
+ * This file contains the trusted intermediary for object planes.  In a secure
+ * implementation the intermediary would be protected.
  *
  * In a CheriOS-based environment, this would be factored into the microkernel
- * as just another kernel object that implements a system call.
+ * as a kernel object that implements the plane-related system calls.
+ *
+ * See ctsrd/reports/ctsrd/reports/20170929-lmp53-internship-report.
  */
 
 struct plane {
@@ -115,7 +117,7 @@ Plane plane_create(id plane_obj)
 
 	// Allocate a new type capability and set it in the plane object provided.
 	// This assigns plane_id = plane_type and uses ID as index.  This would ensure
-	// a linear type range or use an other fast lookup other than indexing.
+	// a linear type range or would use an other fast lookup other than indexing.
 	void *__capability pseal = cheri_type_alloc();
 	printf("plane_create() "); CHERI_CAP_PRINT(pseal);
 	uintmax_t pid = cheri_getbase(pseal) + cheri_getoffset(pseal);
@@ -152,7 +154,7 @@ void plane_destroy(Plane pref)
 
 /**
  * Accepts pointers to arrays of argument registers to simplify the ABI dependency.
- * Assumes a message that returns values in registers
+ * Assumes a message that returns values in registers.
  */
 // XXX: Is this reentrant? e.g. sendMessage could interact with the sealed sender's plane,
 // retriggering the plane changing mechanism
@@ -161,9 +163,12 @@ void objc_msgSend_plane_1(id receiver, SEL _cmd,
 {
 	assert(cheri_getsealed(receiver) != 0);
 
-	// Seal unsealed argument object references using the sender's plane seal
+	// Save the sender's plane.  Saving would need an alternative in presence of
+	// more than a single context.
 	struct plane *senders_plane = plane_cur;
 	assert(senders_plane->valid == YES);
+
+	// Seal unsealed argument object references using the sender's plane seal
 	void *__capability splane_seal = OBJECT_GET_IVAR(senders_plane->plane_obj,
 	                                                 void *__capability, plane_seal);
 	assert((cheri_getperm(splane_seal) & CHERI_PERM_SEAL) != 0);
@@ -182,6 +187,7 @@ void objc_msgSend_plane_1(id receiver, SEL _cmd,
 	plane_cur = receivers_plane;
 
 	// Ask the receiver's plane(s) to send the message.  Copy over the arguments.
+	// The message sending would be scheduled for a different context.
 	SEL send = sel_getUid(sendMessage_sel_name);
 	assert(send != NULL);
 	printf("About to sendMessage\n");
@@ -211,7 +217,7 @@ void objc_msgSend_plane_1(id receiver, SEL _cmd,
 	if (cheri_gettag(ret.c3) != 0 && cheri_getsealed(ret.c3) == 0)
 		ret.c3 = (__uintcap_t)cheri_seal(ret.c3, rplane_seal);
 
-	// Change the current plane back to the sender's plane
+	// Change the current plane back to the sender's plane.
 	plane_cur = senders_plane;
 
 	// Return the result of the message
