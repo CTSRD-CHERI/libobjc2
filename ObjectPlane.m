@@ -37,11 +37,10 @@
 + (id)alloc
 {
 	// Allocate the plane object
-	void * __capability plane_obj = calloc(1, class_getInstanceSize(self));
-	printf("calloc(1, %zx): %p\n", class_getInstanceSize(self), plane_obj);
+	void * __capability plane_obj = class_createInstance(self, 0);
+	printf("class_createInstance: %p\n", plane_obj);
 	if (plane_obj == NULL)
 		return nil;
-	object_setClass(plane_obj, self);
 
 	// Ask the system to create a plane.  This should be a system call
 	Plane plane_sysref = plane_create(plane_obj);
@@ -61,8 +60,8 @@
 	// Ask the system to destroy the plane
 	plane_destroy(plane_sysref);
 
-	// Free calloc'd memory
-	free(self);
+	// Dispose of this object
+	object_dispose(self);
 }
 
 /**
