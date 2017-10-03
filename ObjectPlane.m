@@ -126,11 +126,22 @@
 	return a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7;
 }
 
+
+- (void)doEnter :(id*)receiver :(SEL*)selector :(ObjectPlane*)senders_plane
+                :(register_t*)msg_noncap_args :(__uintcap_t*)msg_cap_args
+{
+}
+
+- (void)doExit :(id)receiver :(SEL)selector :(ObjectPlane*)senders_plane
+               :(struct retval_regs*)ret
+{
+}
+
+
 /**
  * Assumes a message that returns values in registers
  */
 void sendMessage_0(id receiver, SEL selector, register_t *msg_noncap_args, __uintcap_t *msg_cap_args);
-
 
 /**
  * Send a message to an object within this object plane.  Copy over the result
@@ -158,8 +169,8 @@ void sendMessage_0(id receiver, SEL selector, register_t *msg_noncap_args, __uin
 		if (cheri_getsealed(msg_cap_args[i]) != 0 && cheri_gettype(msg_cap_args[i]) == ptype)
 			msg_cap_args[i] = (__uintcap_t)cheri_unseal(msg_cap_args[i], plane_seal);
 
-	// Hook the enter method TODO
-	//[self doEnter :&receiver :&selector :senders_plane :msg_noncap_args :msg_cap_args];
+	// Hook the enter method
+	[self doEnter :&receiver :&selector :senders_plane :msg_noncap_args :msg_cap_args];
 
 	// Send message to the receiving object
 	sendMessage_0(receiver, selector, msg_noncap_args, msg_cap_args);
@@ -173,8 +184,8 @@ void sendMessage_0(id receiver, SEL selector, register_t *msg_noncap_args, __uin
 	       "\tret.noncap_other=%lx\n\t", ret.v0, ret.v1);
 	CHERI_CAP_PRINT(ret.c3);
 
-	// Hook the exit method TODO
-	//[self doExit :receiver :selector :senders_plane];
+	// Hook the exit method
+	[self doExit :receiver :selector :senders_plane :&ret];
 
 	// Return the result of the message
 	return ret;

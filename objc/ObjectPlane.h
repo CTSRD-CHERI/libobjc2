@@ -51,6 +51,11 @@ struct retval_regs {
 
 - (id)allocObject :(Class)cls;
 
+- (void)doEnter :(id*)receiver :(SEL*)selector :(id)senders_plane
+                :(register_t*)msg_noncap_args :(__uintcap_t*)msg_cap_args;
+- (void)doExit :(id)receiver :(SEL)selector :(ObjectPlane*)senders_plane
+               :(struct retval_regs*)ret;
+
 // If you change the sendMessage signature, update it in the macro and
 // typedef below too
 - (struct retval_regs)sendMessage :(id)receiver :(SEL)selector :(id)senders_plane

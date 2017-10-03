@@ -156,8 +156,6 @@ void plane_destroy(Plane pref)
  * Accepts pointers to arrays of argument registers to simplify the ABI dependency.
  * Assumes a message that returns values in registers.
  */
-// XXX: Is this reentrant? e.g. sendMessage could interact with the sealed sender's plane,
-// retriggering the plane changing mechanism
 void objc_msgSend_plane_1(id receiver, SEL _cmd,
                         register_t *msg_noncap_args, __uintcap_t *msg_cap_args)
 {
